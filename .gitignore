@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-html/
+.parcel-cache/
+*.local
+.env
+.env.*
+!.env.example
+pnpm-debug.log*
