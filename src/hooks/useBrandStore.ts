@@ -65,15 +65,32 @@ export function useBrandStore(fallbackBrands: Brand[]) {
   const [brands, setBrandsRaw] = useState<Brand[]>([])
   const [ready, setReady] = useState(false)
 
+  // Merge loaded brands with fallback so rich fields (voiceDoc, cssPackage, designRef)
+  // from brandData.ts are always present, while JSON overrides colours/fonts/etc.
+  const mergeWithFallback = useCallback((loaded: Brand[]): Brand[] => {
+    return loaded.map(b => {
+      const fb = fallbackBrands.find(f => f.id === b.id)
+      if (!fb) return b
+      return {
+        ...b,
+        voiceDoc:        b.voiceDoc        ?? fb.voiceDoc,
+        cssPackage:      b.cssPackage      ?? fb.cssPackage,
+        designRef:       b.designRef       ?? fb.designRef,
+        notes:           b.notes           || fb.notes,
+        sources:         b.sources?.length  ? b.sources  : fb.sources,
+      }
+    })
+  }, [fallbackBrands])
+
   // On mount: localStorage → initial-data.json → fallback
   useEffect(() => {
     const fromStorage = loadFromStorage()
     if (fromStorage) {
-      setBrandsRaw(fromStorage)
+      setBrandsRaw(mergeWithFallback(fromStorage))
       setReady(true)
     } else {
       loadInitialData().then(seeded => {
-        const initial = seeded ?? fallbackBrands
+        const initial = seeded ? mergeWithFallback(seeded) : fallbackBrands
         setBrandsRaw(initial)
         saveToStorage(initial)
         setReady(true)
@@ -103,10 +120,10 @@ export function useBrandStore(fallbackBrands: Brand[]) {
 
   const resetToDefaults = useCallback(async () => {
     const seeded = await loadInitialData()
-    const defaults = seeded ?? fallbackBrands
+    const defaults = seeded ? mergeWithFallback(seeded) : fallbackBrands
     setBrandsRaw(defaults)
     saveToStorage(defaults)
-  }, [fallbackBrands])
+  }, [fallbackBrands, mergeWithFallback])
 
   const exportData = useCallback(() => {
     const data = JSON.stringify({ version: '1.0', exportedAt: new Date().toISOString(), brands }, null, 2)
