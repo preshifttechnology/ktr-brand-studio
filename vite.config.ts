@@ -4,7 +4,7 @@ import { defineConfig } from "vite"
 
 export default defineConfig({
   // Replace YOUR-REPO with your actual GitHub repo name, e.g. 'ktr-brand-studio'
-  base: process.env.GITHUB_PAGES ? '/ktr-brand-studio/' : '/',
+  base: '/ktr-brand-studio/',
   plugins: [react()],
   resolve: {
     alias: {
