@@ -8,7 +8,7 @@ function loadFromStorage(): Brand[] | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(sanitizeBrand)
     return null
   } catch {
     return null
@@ -23,6 +23,30 @@ function saveToStorage(brands: Brand[]) {
   }
 }
 
+/** Ensure every brand loaded from JSON/localStorage has all required fields */
+function sanitizeBrand(b: Record<string, unknown>): Brand {
+  return {
+    id: (b.id as string) ?? Date.now().toString(),
+    name: (b.name as string) ?? 'Unnamed',
+    url: (b.url as string) ?? '',
+    status: (b.status as Brand['status']) ?? 'new',
+    sources: (b.sources as Brand['sources']) ?? [],
+    notes: (b.notes as string) ?? '',
+    colors: (b.colors as Brand['colors']) ?? [],
+    fonts: (b.fonts as Brand['fonts']) ?? [],
+    voiceAttributes: (b.voiceAttributes as Brand['voiceAttributes']) ?? [],
+    voiceDoc: (b.voiceDoc as string | null) ?? null,
+    cssPackage: (b.cssPackage as string | null) ?? null,
+    designRef: (b.designRef as string | null) ?? null,
+    logoUrl: b.logoUrl as string | undefined,
+    logoReverseUrl: b.logoReverseUrl as string | undefined,
+    logoNotes: b.logoNotes as string | undefined,
+    tagline: b.tagline as string | undefined,
+    description: b.description as string | undefined,
+    screenshotUrl: b.screenshotUrl as string | undefined,
+  }
+}
+
 async function loadInitialData(): Promise<Brand[] | null> {
   try {
     // Fetch the seed JSON from /public/initial-data.json
@@ -30,7 +54,8 @@ async function loadInitialData(): Promise<Brand[] | null> {
     const res = await fetch(`${base}initial-data.json`)
     if (!res.ok) return null
     const data = await res.json()
-    return data.brands ?? null
+    const brands = data.brands ?? null
+    return brands ? brands.map(sanitizeBrand) : null
   } catch {
     return null
   }
